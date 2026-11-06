@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
+import { createWater } from './water-scene.js?v=20261106-water-1';
 
 // A solid, bevelled glass sheet fractured into irregular triangular prisms.
 // The environment is generated locally; no HDR images or network assets are needed.
@@ -44,7 +45,7 @@ function studioEnvironment(renderer) {
     panel(2.2, 8, [-4, 2, 4], new THREE.Color(5, 5.5, 5.2));
     panel(.65, 9, [3.5, .2, 4], new THREE.Color(3, 3.8, 4.3));
     panel(7, 2, [0, 5, 1], new THREE.Color(3.4, 3.7, 3.2));
-    panel(3, 5, [4, -2, -3], new THREE.Color(.8, 1.5, .65));
+    panel(3, 5, [4, -2, -3], new THREE.Color(.6, 1.5, 1.65));
     const generator = new THREE.PMREMGenerator(renderer);
     const environment = generator.fromScene(studio, .02);
     generator.dispose();
@@ -59,7 +60,7 @@ function backdrop() {
     context.fillStyle = '#102027';
     context.fillRect(0, 0, 1024, 1024);
     const glow = context.createRadialGradient(670, 650, 15, 620, 650, 630);
-    glow.addColorStop(0, '#537b58'); glow.addColorStop(.42, '#28443c'); glow.addColorStop(1, '#102027');
+    glow.addColorStop(0, '#376f82'); glow.addColorStop(.42, '#1b414e'); glow.addColorStop(1, '#102027');
     context.fillStyle = glow;
     context.fillRect(0, 0, 1024, 1024);
     context.font = '600 320px Arial, sans-serif';
@@ -88,7 +89,7 @@ export function mountGlass(canvas) {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#102027');
     const camera = new THREE.PerspectiveCamera(42, 1, .1, 40);
-    camera.position.set(0, .15, 7.4);
+    camera.position.set(0, 1.4, 7.7);
     camera.lookAt(0, .12, 0);
     const environment = studioEnvironment(renderer);
     scene.environment = environment.texture;
@@ -104,7 +105,8 @@ export function mountGlass(canvas) {
     scene.add(edge);
 
     const sculpture = new THREE.Group();
-    sculpture.position.y = .22;
+    sculpture.position.y = .55;
+    sculpture.scale.setScalar(.82);
     scene.add(sculpture);
     const points = [
         [-1.72,-1.95],[-.5,-1.95],[.8,-1.95],[1.72,-1.95],
@@ -144,9 +146,18 @@ export function mountGlass(canvas) {
         sculpture.add(chip);
     }
     material.dispose();
+    const water = createWater(scene, {
+        mobile: window.innerWidth < 641,
+        reduced: reduced.matches,
+        onSplash: count => { figure.dataset.waterSplashes = String(count); },
+        onPhase: phase => { figure.dataset.waterPhase = phase; }
+    });
+    figure.dataset.waterReady = 'true';
 
     let frame = null, visible = true, lost = false, destroyed = false, lastRender = 0;
-    let replayStart = performance.now(), staticSpread = false;
+    let replayStart = 0, staticSpread = false;
+    let simulationTime = 0, lastTick = null, lastPointerSplash = -10;
+    let paused = document.documentElement.dataset.waterMotion === 'paused' || reduced.matches;
     const pointer = {x:0,y:0,hover:false};
     const current = {x:0,y:0};
     function pose(now) {
@@ -169,12 +180,16 @@ export function mountGlass(canvas) {
     function render(now = performance.now()) {
         frame = null;
         if (destroyed || lost || !visible || document.hidden) return;
-        if (now - lastRender >= 1000 / 30 || reduced.matches) {
+        if (now - lastRender >= 1000 / 30 || reduced.matches || paused) {
+            const delta = lastTick === null ? 0 : Math.min(.06, Math.max(0,(now-lastTick)/1000));
+            if (!paused && !reduced.matches) simulationTime += delta;
+            lastTick = now;
             lastRender = now;
-            pose(now);
+            pose(reduced.matches ? 2000 : simulationTime*1000);
+            water.update(simulationTime);
             renderer.render(scene, camera);
         }
-        if (!reduced.matches) frame = requestAnimationFrame(render);
+        if (!reduced.matches && !paused) frame = requestAnimationFrame(render);
     }
     function requestRender() { if (frame === null && !destroyed && !lost && visible && !document.hidden) frame = requestAnimationFrame(render); }
     function resize() {
@@ -190,17 +205,46 @@ export function mountGlass(canvas) {
         pointer.x = (event.clientX - rect.left) / rect.width * 2 - 1;
         pointer.y = (event.clientY - rect.top) / rect.height * 2 - 1;
         pointer.hover = true;
+        if (!paused && !event.target.closest('button') && simulationTime-lastPointerSplash>1.25) {
+            water.splash(pointer.x*1.1,1.1,simulationTime,.85);
+            lastPointerSplash=simulationTime;
+        }
         figure.classList.add('has-interacted');
         requestRender();
     }
     function leave() { pointer.x = 0; pointer.y = 0; pointer.hover = false; requestRender(); }
-    function replayAnimation() { replayStart = performance.now(); staticSpread = !staticSpread; figure.classList.add('has-interacted'); requestRender(); }
+    function replayAnimation() {
+        if (!reduced.matches) document.dispatchEvent(new CustomEvent('water:play'));
+        replayStart = simulationTime*1000;
+        staticSpread = !staticSpread;
+        water.splash(0,1.1,simulationTime,1.1);
+        figure.classList.add('has-interacted');
+        requestRender();
+    }
+    function splashAtPointer(event) {
+        if (event.target.closest('button,a')) return;
+        if (!reduced.matches) document.dispatchEvent(new CustomEvent('water:play'));
+        const rect=figure.getBoundingClientRect();
+        const x=((event.clientX-rect.left)/rect.width*2-1)*1.35;
+        water.splash(x,1.15,simulationTime,1.15);
+        figure.classList.add('has-interacted');
+        requestRender();
+    }
+    function waterMotionChanged(event) {
+        paused=event.detail.paused || reduced.matches;
+        lastTick=null;
+        if (frame!==null) { cancelAnimationFrame(frame); frame=null; }
+        requestRender();
+    }
     function motionChanged() {
-        replay?.setAttribute('aria-label', reduced.matches ? 'Change glass composition' : 'Replay glass animation');
+        water.setReduced(reduced.matches);
+        lastTick=null;
+        replay?.setAttribute('aria-label', reduced.matches ? 'Change glass and water composition' : 'Replay glass and water splash');
         if (frame !== null) { cancelAnimationFrame(frame); frame = null; }
         requestRender();
     }
     function visibilityChanged() {
+        lastTick=null;
         if (document.hidden && frame !== null) { cancelAnimationFrame(frame); frame = null; }
         else requestRender();
     }
@@ -208,12 +252,15 @@ export function mountGlass(canvas) {
     resizeObserver.observe(figure);
     const intersection = new IntersectionObserver(entries => {
         visible = entries[0].isIntersecting;
+        lastTick=null;
         if (!visible && frame !== null) { cancelAnimationFrame(frame); frame = null; }
         else requestRender();
     });
     intersection.observe(figure);
     figure.addEventListener('pointermove',move,{passive:true});
     figure.addEventListener('pointerleave',leave);
+    figure.addEventListener('pointerdown',splashAtPointer,{passive:true});
+    document.addEventListener('water:motion',waterMotionChanged);
     replay?.addEventListener('click',replayAnimation);
     reduced.addEventListener('change',motionChanged);
     document.addEventListener('visibilitychange',visibilityChanged);
@@ -224,7 +271,8 @@ export function mountGlass(canvas) {
     });
     canvas.addEventListener('webglcontextrestored',() => { lost = false; figure.classList.add('is-webgl'); requestRender(); });
     resize();
-    pose(reduced.matches ? 2000 : performance.now());
+    pose(reduced.matches ? 2000 : 0);
+    water.update(0);
     renderer.render(scene,camera);
     figure.classList.add('is-webgl');
     figure.dataset.renderer = 'webgl';
@@ -236,6 +284,8 @@ export function mountGlass(canvas) {
         resizeObserver.disconnect(); intersection.disconnect();
         reduced.removeEventListener('change',motionChanged);
         document.removeEventListener('visibilitychange',visibilityChanged);
+        document.removeEventListener('water:motion',waterMotionChanged);
+        water.dispose();
         scene.traverse(object => { object.geometry?.dispose(); if (object.material) { object.material.map?.dispose(); object.material.dispose(); } });
         environment.dispose(); renderer.dispose();
     },{once:true});

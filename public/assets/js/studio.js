@@ -47,7 +47,7 @@
     }
     const figure = document.getElementById('glassFigure');
     if (figure) {
-        import('./glass.js?v=20261106-1').then(module => module.mountGlass(document.getElementById('glassCanvas'))).catch(() => {
+        import('./glass.js?v=20261106-water-1').then(module => module.mountGlass(document.getElementById('glassCanvas'))).catch(() => {
             figure.dataset.renderer = 'fallback';
             document.getElementById('glassReplay').hidden = true;
             document.getElementById('glassHint').textContent = 'A new perspective.';

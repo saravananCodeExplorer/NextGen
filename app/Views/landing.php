@@ -88,9 +88,11 @@ $arrow = '<svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= esc(base_url('assets/css/studio.css?v=20261106-1')) ?>">
-    <script src="<?= esc(base_url('assets/js/studio.js?v=20261106-1')) ?>" defer></script>
+    <script src="<?= esc(base_url('assets/js/studio.js?v=20261106-water-1')) ?>" defer></script>
     <link rel="stylesheet" href="<?= esc(base_url('assets/css/restored-sections.css?v=20261106-2')) ?>">
     <script src="<?= esc(base_url('assets/js/software-showcase.js?v=20261106-2')) ?>" defer></script>
+    <link rel="stylesheet" href="<?= esc(base_url('assets/css/water-effects.css?v=20261106-water-1')) ?>">
+    <script src="<?= esc(base_url('assets/js/water-interactions.js?v=20261106-water-1')) ?>" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -127,7 +129,7 @@ $arrow = '<svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><
                 <div class="hero-actions"><a href="#contact" class="button">Start your next chapter <?= $arrow ?></a><a href="#services" class="text-link">Explore our expertise <span aria-hidden="true">↘</span></a></div>
                 <div class="hero-note"><span class="note-line"></span><p>Thoughtfully designed.<br>Built to work in the real world.</p></div>
             </div>
-            <figure class="glass-figure" id="glassFigure" aria-label="An interactive sculpture of fractured glass, with light catching its floating edges">
+            <figure class="glass-figure" id="glassFigure" aria-label="An interactive glass sculpture with flowing water, splash crowns and floating droplets">
                 <div class="glass-meta"><span>NEXT GEN / A NEW PERSPECTIVE</span><span class="glass-cross" aria-hidden="true">+</span></div>
                 <div class="glass-scene" id="glassScene">
                     <svg class="glass-fallback" viewBox="0 0 600 600" role="img" aria-label="Floating, fractured glass panels">
@@ -135,10 +137,11 @@ $arrow = '<svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><
                         <ellipse cx="315" cy="484" rx="150" ry="23" fill="#000" opacity=".7" filter="url(#shadow)"/><ellipse cx="350" cy="355" rx="230" ry="230" fill="url(#glow)"/><text x="135" y="354" fill="#e2ede4" font-family="sans-serif" font-size="170" font-weight="600" opacity=".2">NG</text>
                         <g fill="url(#shard)" stroke="#d5faf0" stroke-opacity=".75" stroke-width="1.3"><path d="m135 138 145 79-33 100Z"/><path d="m150 124 210-5-70 87Z"/><path d="m377 122 88 10-165 78Z"/><path d="m468 151 12 173-172-94Z"/><path d="m494 349-23 111-167-213Z"/><path d="m452 477-127 8-33-234Z"/><path d="m307 481-132-30 99-204Z"/><path d="m156 431-26-119 129-77Z"/><path d="m126 286-3-118 129 157Z"/><path d="m95 112 27 12-8 38Z"/><path d="m490 105 29 8-34 31Z"/><path d="m121 463 24 24-32 11Z"/></g>
                     </svg>
+                    <div class="water-fallback" aria-hidden="true"><i></i><i></i><i></i></div>
                     <canvas id="glassCanvas" aria-hidden="true"></canvas>
                 </div>
-                <figcaption class="glass-caption"><div><span class="glass-caption-index">01 / CLARITY BY DESIGN</span><p>Different pieces.<br><em>One clear direction.</em></p></div><button class="glass-replay" id="glassReplay" type="button" aria-label="Replay glass animation" title="Replay glass animation"><span aria-hidden="true">↻</span></button></figcaption>
-                <span class="glass-hint" id="glassHint">Move your pointer to explore</span>
+                <figcaption class="glass-caption"><div><span class="glass-caption-index">01 / CLARITY BY DESIGN</span><p>Different pieces.<br><em>One clear direction.</em></p></div><div class="glass-controls"><button class="glass-replay water-motion" id="waterMotion" type="button" aria-label="Pause water animation" aria-pressed="true" title="Pause water animation"><span aria-hidden="true"></span></button><button class="glass-replay" id="glassReplay" type="button" aria-label="Replay glass and water splash" title="Make a splash"><span aria-hidden="true">↻</span></button></div></figcaption>
+                <span class="glass-hint" id="glassHint">Move or tap to make a splash</span>
             </figure>
         </section>
 
